@@ -14,7 +14,7 @@ API_KEY = os.environ.get("API_KEY", "CHANGE_THIS_SECRET_KEY")
 # KEEP YOUR WEBHOOK ENVIRONMENT VARIABLE THE SAME
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 
-HEARTBEAT_TIMEOUT = int(os.environ.get("HEARTBEAT_TIMEOUT", "60"))
+HEARTBEAT_TIMEOUT = int(os.environ.get("HEARTBEAT_TIMEOUT", "30"))
 DISCORD_UPDATE_INTERVAL = int(os.environ.get("DISCORD_UPDATE_INTERVAL", "5"))
 
 ACCOUNTS_FILE = "accounts.json"
@@ -98,21 +98,8 @@ def check_key(req):
 
 
 def account_is_online(account):
-    try:
-        last_seen = float(account.get("lastSeen", 0))
-    except (TypeError, ValueError):
-        return False
-
-    if last_seen <= 0:
-        return False
-
-    age = time.time() - last_seen
-
-    # A future timestamp should not make an account appear offline.
-    if age < 0:
-        return True
-
-    return age <= HEARTBEAT_TIMEOUT
+    last_seen = float(account.get("lastSeen", 0))
+    return (time.time() - last_seen) <= HEARTBEAT_TIMEOUT
 
 
 def format_money(value):
@@ -1317,15 +1304,14 @@ def heartbeat():
 
     save_accounts()
 
-    # Discord is updated by monitor_loop() every DISCORD_UPDATE_INTERVAL
-    # seconds. Keeping heartbeat requests independent from Discord prevents
-    # temporary Discord/API delays from affecting the heartbeat response.
+    threading.Thread(
+        target=update_discord,
+        daemon=True
+    ).start()
 
     return jsonify({
         "ok": True,
-        "message": "Heartbeat received",
-        "serverTime": time.time(),
-        "onlineTimeout": HEARTBEAT_TIMEOUT
+        "message": "Heartbeat received"
     })
 
 
