@@ -563,23 +563,31 @@ h1{
 }
 
 .avatar{
-    width:37px;
-    height:37px;
-    flex:0 0 37px;
+    width:42px;
+    height:42px;
+    flex:0 0 42px;
     border-radius:13px;
-    display:grid;
-    place-items:center;
+    display:block;
+    object-fit:cover;
+    object-position:center;
     background:
         radial-gradient(circle at 35% 25%,#fff 0 4%,transparent 5%),
         linear-gradient(145deg,#eaffd4,#94d477 65%,#4a9c4d);
     border:1px solid rgba(202,255,158,.55);
+    box-shadow:
+        0 5px 14px rgba(0,0,0,.30),
+        0 0 14px rgba(105,232,93,.08);
+}
+
+.avatar-fallback{
+    display:grid;
+    place-items:center;
     color:#163b19;
     font-size:12px;
     font-weight:900;
-    box-shadow:0 5px 14px rgba(0,0,0,.25);
 }
 
-.avatar::after{
+.avatar-fallback::after{
     content:"🥚";
     font-size:16px;
 }
@@ -1085,6 +1093,11 @@ function renderAccounts(data){
             .toUpperCase()
         );
 
+        const userId = String(account.userId || "");
+        const avatarUrl = userId
+            ? `https://www.roblox.com/headshot-thumbnail/image?userId=${encodeURIComponent(userId)}&width=150&height=150&format=png`
+            : "";
+
         const {pets, eggs, totalPets, totalEggs} = inventoryItems(account);
         const totalInventory = totalPets + totalEggs;
 
@@ -1093,7 +1106,14 @@ function renderAccounts(data){
         return `
         <div class="account">
             <div class="user">
-                <div class="avatar">${initial}</div>
+                <img
+                    class="avatar"
+                    src="${avatarUrl}"
+                    alt="${esc(account.playerName || "Roblox avatar")}"
+                    loading="lazy"
+                    onerror="this.style.display='none';this.nextElementSibling.style.display='grid';"
+                >
+                <div class="avatar avatar-fallback" style="display:none">${initial}</div>
                 <div>
                     <div class="username">${esc(account.playerName || account.userId)}</div>
                     <div class="userid">ID ${esc(account.userId || "—")}</div>
